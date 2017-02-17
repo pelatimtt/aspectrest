@@ -11,6 +11,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -22,15 +24,18 @@ public class AspectRestServletTest {
     static final String USER_AGENT = "Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405";
 
     static Thread serverThread;
+    static Server server;
 
-    {
+    @BeforeClass
+    public static void setup() {
+
         serverThread = new Thread() {
 
             @Override
             public void run() {
                 try {
 
-                    Server server = new Server(PORT);
+                    server = new Server(PORT);
 
                     AspectRestServlet restServlet = new AspectRestServlet();
                     restServlet.addService("apis", new Apis());
@@ -53,6 +58,13 @@ public class AspectRestServletTest {
 
     }
 
+    @AfterClass
+    public static void shutdown() throws Exception {
+
+        server.stop();
+        serverThread.stop();
+
+    }
 
     @Test
     public void testGet() throws Exception {
@@ -68,6 +80,37 @@ public class AspectRestServletTest {
         assert (resp.equals("test"));
 
     }
+
+    @Test
+    public void testGetPath() throws Exception {
+
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpGet request = new HttpGet("http://localhost:" + PORT + "/apis/echo/test");
+
+        request.addHeader("User-Agent", USER_AGENT);
+        HttpResponse response = client.execute(request);
+
+        assert (response.getStatusLine().getStatusCode() == 200);
+        String resp = new Genson().deserialize(response.getEntity().getContent(), String.class);
+        assert (resp.equals("test"));
+
+    }
+
+    @Test
+    public void testGetQs() throws Exception {
+
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpGet request = new HttpGet("http://localhost:" + PORT + "/apis/echorawqs?id=test");
+
+        request.addHeader("User-Agent", USER_AGENT);
+        HttpResponse response = client.execute(request);
+
+        assert (response.getStatusLine().getStatusCode() == 200);
+        String resp = new Genson().deserialize(response.getEntity().getContent(), String.class);
+        assert (resp.equals("id=test"));
+
+    }
+
 
     @Test
     public void testPost() throws Exception {
@@ -104,6 +147,7 @@ public class AspectRestServletTest {
 
 
     }
+
 
     @Test
     public void testAuthGet() throws Exception {

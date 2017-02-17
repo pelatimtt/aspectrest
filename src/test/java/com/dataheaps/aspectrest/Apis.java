@@ -13,6 +13,12 @@ public class Apis implements RestHandler {
     }
 
     @Get
+    @Path("/echo/(?<id>.+)")
+    public String echoGetPath(@FromPath @Name("id") String id) {
+        return id;
+    }
+
+    @Get
     @Path("/echo")
     public String echoGet(@FromQueryString @Name("id") String id) {
         return id;
@@ -33,6 +39,12 @@ public class Apis implements RestHandler {
     @Post
     @Path("/echoraw")
     public String echoPostRaw(@IsBody @Name("id") String body) {
+        return body;
+    }
+
+    @Get
+    @Path("/echorawqs")
+    public String echoPostRawQs(@IsQueryString @Name("id") String body) {
         return body;
     }
 }
