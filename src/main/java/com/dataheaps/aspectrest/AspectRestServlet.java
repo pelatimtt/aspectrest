@@ -38,6 +38,13 @@ import java.util.regex.Pattern;
  */
 public class AspectRestServlet extends HttpServlet {
 
+    static ThreadLocal<Object> localContext = new ThreadLocal<>();
+
+    public static Object getContext() {
+        return localContext.get();
+    }
+
+
     static final String CONTENT_TYPE = "Content-Type";
     static final String CONTENT_LENGTH = "Content-Length";
     static final String CACHE_CONTROL = "Cache-Control";
@@ -52,9 +59,14 @@ public class AspectRestServlet extends HttpServlet {
     SortedSet<RestServiceDescriptor> serviceTree = new TreeSet<>();
     List<AuthModule> authenticatorTree = new ArrayList<>();
     Genson genson;
+    Object context;
 
     public AspectRestServlet() {
+    }
 
+    public AspectRestServlet(Object context) {
+
+        this.context = context;
         genson = new GensonBuilder()
                 .useClassMetadata(false)
                 .exclude("@class")
@@ -391,6 +403,7 @@ public class AspectRestServlet extends HttpServlet {
 
             ServletContext.respose.set(httpServletResponse);
             ServletContext.request.set(httpServletRequest);
+            localContext.set(context);
 
             httpServletResponse.setHeader(CACHE_CONTROL, "no-cache");
             for (Map.Entry<String,String> e : headers.entrySet())

@@ -38,8 +38,8 @@ public class AspectRestServletTest {
                     server = new Server(PORT);
 
                     AspectRestServlet restServlet = new AspectRestServlet();
-                    restServlet.addService("apis", new Apis());
-                    restServlet.addAuthService("auth", new Auth());
+                    restServlet.setModules(ImmutableMap.of("apis", new Apis()));
+                    restServlet.setAuthenticators(ImmutableMap.of("auth", new Auth()));
 
                     ServletHandler servletHandler = new ServletHandler();
                     servletHandler.addServletWithMapping(new ServletHolder(restServlet), "/");
