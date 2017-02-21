@@ -3,6 +3,8 @@ package com.dataheaps.aspectrest;
 
 import com.dataheaps.aspectrest.annotations.*;
 import com.dataheaps.aspectrest.modules.auth.AuthModule;
+import com.dataheaps.aspectrest.serializers.GensonSerializer;
+import com.dataheaps.aspectrest.serializers.Serializer;
 import com.dataheaps.aspectrest.validation.Validator;
 
 import com.owlike.genson.Genson;
@@ -58,21 +60,16 @@ public class AspectRestServlet extends HttpServlet {
 
     SortedSet<RestServiceDescriptor> serviceTree = new TreeSet<>();
     List<AuthModule> authenticatorTree = new ArrayList<>();
-    Genson genson;
     Object context;
+    Serializer serializer;
 
     public AspectRestServlet() {
+        serializer = new GensonSerializer();
     }
 
-    public AspectRestServlet(Object context) {
-
+    public AspectRestServlet(Serializer serializer, Object context) {
         this.context = context;
-        genson = new GensonBuilder()
-                .useClassMetadata(false)
-                .exclude("@class")
-                .withConverter(new JodaTimeConverter(), DateTime.class)
-                .useDateAsTimestamp(true)
-                .create();
+        this.serializer = serializer;
     }
 
     @Override
@@ -87,15 +84,6 @@ public class AspectRestServlet extends HttpServlet {
         catch (IllegalAccessException e) {
             throw new ServletException(e);
         }
-    }
-
-    List getPostArgs(HttpServletRequest req) throws IOException {
-
-        Iterator args = genson.deserializeValues(req.getInputStream(), Object.class);
-        List argList = new ArrayList<>();
-        while (args.hasNext()) argList.add(args.next());
-        return argList;
-
     }
 
     Set<RestSource> getRestSource(Parameter p) {
@@ -198,8 +186,8 @@ public class AspectRestServlet extends HttpServlet {
 
     void sendResponse(Object o, HttpServletResponse resp) throws IOException {
 
-        byte[] respBuffer = genson.serialize(o).getBytes(StandardCharsets.UTF_8);
-        resp.setHeader(CONTENT_TYPE, "application/json; charset=utf-8");
+        byte[] respBuffer = serializer.serialize(o);
+        resp.setHeader(CONTENT_TYPE, serializer.getContentType());
         resp.setHeader(CONTENT_LENGTH, Integer.toString(respBuffer.length));
 
         resp.getOutputStream().write(respBuffer);
@@ -347,7 +335,7 @@ public class AspectRestServlet extends HttpServlet {
 
     void fillBodyParameters(InputStream body, RestRequest request) {
 
-        Object o = genson.deserialize(body, Object.class);
+        Object o = serializer.deserialize(body, Object.class);
 
         for (RestServiceDescriptor.ArgIndex i : request.descriptor.argsIndexes) {
 

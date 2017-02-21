@@ -1,4 +1,4 @@
-package com.dataheaps.aspectrest;
+package com.dataheaps.aspectrest.serializers;
 
 import com.owlike.genson.Context;
 import com.owlike.genson.Converter;
