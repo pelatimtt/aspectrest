@@ -2,8 +2,6 @@ package com.dataheaps.aspectrest.modules.auth;
 
 import com.dataheaps.aspectrest.ServletContext;
 import com.dataheaps.aspectrest.annotations.*;
-import com.dataheaps.aspectrest.validation.Email;
-import com.dataheaps.aspectrest.validation.NotEmpty;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
@@ -49,8 +47,8 @@ public abstract class AbstractAuthModule<T> implements AuthModule<T> {
 
     @Post @Path("login")
     public T login(
-            @FromBody @Name("username") @NotNull @Validate(Email.class) String username,
-            @FromBody @Name("password") @NotNull @Validate(NotEmpty.class) String password,
+            @FromBody @Name("username") @NotNull String username,
+            @FromBody @Name("password") @NotNull String password,
             @FromBody @Name("rememberme") @NotNull Boolean rememberMe
     ) throws IllegalAccessException, IOException {
 

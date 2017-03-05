@@ -23,48 +23,59 @@ public class AspectRestServletTest {
     static final int PORT = 23457;
     static final String USER_AGENT = "Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405";
 
-    static Thread serverThread;
     static Server server;
 
     @BeforeClass
-    public static void setup() {
+    public static void setup() throws Exception {
 
-        serverThread = new Thread() {
 
-            @Override
-            public void run() {
-                try {
+        server = new Server(PORT);
 
-                    server = new Server(PORT);
+        AspectRestServlet restServlet = new AspectRestServlet();
+        restServlet.setModules(ImmutableMap.of("apis", new Apis()));
+        restServlet.setAuthenticators(ImmutableMap.of("auth", new Auth()));
 
-                    AspectRestServlet restServlet = new AspectRestServlet();
-                    restServlet.setModules(ImmutableMap.of("apis", new Apis()));
-                    restServlet.setAuthenticators(ImmutableMap.of("auth", new Auth()));
+        ServletHandler servletHandler = new ServletHandler();
+        servletHandler.addServletWithMapping(new ServletHolder(restServlet), "/");
 
-                    ServletHandler servletHandler = new ServletHandler();
-                    servletHandler.addServletWithMapping(new ServletHolder(restServlet), "/");
+        server.setHandler(servletHandler);
+        server.start();
 
-                    server.setHandler(servletHandler);
-                    server.start();
 
-                }
-                catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
-
-        serverThread.start();
+//        serverThread = new Thread() {
+//
+//            @Override
+//            public void run() {
+//                try {
+//
+//                    server = new Server(PORT);
+//
+//                    AspectRestServlet restServlet = new AspectRestServlet();
+//                    restServlet.setModules(ImmutableMap.of("apis", new Apis()));
+//                    restServlet.setAuthenticators(ImmutableMap.of("auth", new Auth()));
+//
+//                    ServletHandler servletHandler = new ServletHandler();
+//                    servletHandler.addServletWithMapping(new ServletHolder(restServlet), "/");
+//
+//                    server.setHandler(servletHandler);
+//                    server.start();
+//
+//                }
+//                catch (Exception e) {
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//        };
+//
+//        serverThread.start();
 
     }
 
     @AfterClass
     public static void shutdown() throws Exception {
-
         server.stop();
-        serverThread.stop();
-
     }
+
 
     @Test
     public void testGet() throws Exception {
@@ -181,6 +192,34 @@ public class AspectRestServletTest {
         HttpClient client = HttpClientBuilder.create().build();
 
         HttpGet request = new HttpGet("http://localhost:" + PORT + "/apis/echoauth?id=test");
+
+        request.addHeader("User-Agent", USER_AGENT);
+        HttpResponse response = client.execute(request);
+
+        assert (response.getStatusLine().getStatusCode() != 200);
+
+    }
+
+    @Test
+    public void testValidate() throws Exception {
+
+        HttpClient client = HttpClientBuilder.create().build();
+
+        HttpGet request = new HttpGet("http://localhost:" + PORT + "/apis/validate?id=test@gmail.com");
+
+        request.addHeader("User-Agent", USER_AGENT);
+        HttpResponse response = client.execute(request);
+
+        assert (response.getStatusLine().getStatusCode() == 200);
+
+    }
+
+    @Test
+    public void testValidateFailure() throws Exception {
+
+        HttpClient client = HttpClientBuilder.create().build();
+
+        HttpGet request = new HttpGet("http://localhost:" + PORT + "/apis/validate?id=gmail.com");
 
         request.addHeader("User-Agent", USER_AGENT);
         HttpResponse response = client.execute(request);

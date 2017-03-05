@@ -5,10 +5,7 @@ import com.dataheaps.aspectrest.annotations.*;
 import com.dataheaps.aspectrest.modules.auth.AuthModule;
 import com.dataheaps.aspectrest.serializers.GensonSerializer;
 import com.dataheaps.aspectrest.serializers.Serializer;
-import com.dataheaps.aspectrest.validation.Validator;
 
-import com.owlike.genson.Genson;
-import com.owlike.genson.GensonBuilder;
 import lombok.Getter;
 import lombok.Setter;
 import org.joda.time.DateTime;
@@ -19,6 +16,11 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.ValidationException;
+import javax.validation.ValidatorFactory;
+import javax.validation.executable.ExecutableValidator;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +48,6 @@ public class AspectRestServlet extends HttpServlet {
         return localContext.get();
     }
 
-
     static final String CONTENT_TYPE = "Content-Type";
     static final String CONTENT_LENGTH = "Content-Length";
     static final String CACHE_CONTROL = "Cache-Control";
@@ -62,14 +63,20 @@ public class AspectRestServlet extends HttpServlet {
     List<AuthModule> authenticatorTree = new ArrayList<>();
     Object context;
     Serializer serializer;
+    ValidatorFactory factory;
+    ExecutableValidator validator;
 
     public AspectRestServlet() {
         serializer = new GensonSerializer();
+        factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator().forExecutables();
     }
 
     public AspectRestServlet(Serializer serializer, Object context) {
         this.context = context;
         this.serializer = serializer;
+        factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator().forExecutables();
     }
 
     @Override
@@ -161,12 +168,8 @@ public class AspectRestServlet extends HttpServlet {
                 if (name == null)
                     throw new IllegalArgumentException("A name must be specified for a parameter" + service.getClass().getCanonicalName() + "." + m.getName());
 
-                boolean notNull = p.isAnnotationPresent(NotNull.class);
-                Validate validators = p.getAnnotation(Validate.class);
                 argIndexes.add(new RestServiceDescriptor.ArgIndex(
-                        restSource, ctr, name.value(),
-                        notNull, p.getType(),
-                        (validators != null) ? validators.value() : null
+                        restSource, ctr, name.value(), p.getType()
                 ));
             }
 
@@ -175,9 +178,14 @@ public class AspectRestServlet extends HttpServlet {
             RestServiceDescriptor descriptor = new RestServiceDescriptor(
                     priority != null ? priority.value() : 0,
                     Pattern.compile("^" + servicePath + "$"),
-                    service, m,authenticated, verb,
+                    service, m, authenticated, verb,
                     argIndexes
             );
+
+            logger.info(String.format(
+                    "Registered handler for path %s mapped to %s.%s",
+                    servicePath, m.getDeclaringClass().getCanonicalName(), m.getName()
+            ));
 
             services.add(descriptor);
 
@@ -305,32 +313,17 @@ public class AspectRestServlet extends HttpServlet {
 
     void validateParameters(RestServiceDescriptor d, Object[] args) throws IllegalAccessException, InstantiationException {
 
-        for (RestServiceDescriptor.ArgIndex i : d.argsIndexes) {
-            if (i.notNull && args[i.index] == null)
-                throw new IllegalArgumentException("Illegal input value for argument " + i.name);
+        Set<ConstraintViolation<Object>> violations = validator.validateParameters(d.service, d.method, args);
 
-            if (i.validators == null) continue;
+        if (violations == null || violations.isEmpty())
+            return;
 
-            if (args[i.index] == null) continue;
-            for (Class<? extends Validator> k : i.validators) {
-                k.newInstance().validate(i.name, args[i.index]);
-            }
+        StringBuffer res = new StringBuffer();
+        for (ConstraintViolation<Object> v: violations) {
+            res.append(v.getMessage() + ";");
         }
-    }
 
-    RestMethod getRequestMethod(String verb) throws NoSuchElementException {
-
-        if (verb.equals("GET"))
-            return RestMethod.GET;
-        else if (verb.equals("DELETE"))
-            return RestMethod.DELETE;
-        else if (verb.equals("POST"))
-            return RestMethod.POST;
-        else if (verb.equals("PUT"))
-            return RestMethod.POST;
-        else
-            throw new NoSuchElementException("Method " + verb + " is not allowed");
-
+        throw new ValidationException(res.toString());
     }
 
     void fillBodyParameters(InputStream body, RestRequest request) {
@@ -388,6 +381,8 @@ public class AspectRestServlet extends HttpServlet {
     void handle(RestMethod method, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException, ServletException {
 
         try {
+
+            logger.info(method.toString() + " " + httpServletRequest.getServletPath());
 
             ServletContext.respose.set(httpServletResponse);
             ServletContext.request.set(httpServletRequest);

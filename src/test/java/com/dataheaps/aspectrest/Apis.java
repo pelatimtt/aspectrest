@@ -1,6 +1,10 @@
 package com.dataheaps.aspectrest;
 
 import com.dataheaps.aspectrest.annotations.*;
+import org.hibernate.validator.constraints.Email;
+
+import javax.validation.constraints.*;
+import javax.validation.constraints.NotNull;
 
 /**
  * Created by admin on 16/2/17.
@@ -47,4 +51,12 @@ public class Apis implements RestHandler {
     public String echoPostRawQs(@IsQueryString @Name("id") String body) {
         return body;
     }
+
+    @Get
+    @Path("/validate")
+    public String validate(@FromQueryString @Name("id") @NotNull @Email String body) {
+        return body;
+    }
+
+
 }

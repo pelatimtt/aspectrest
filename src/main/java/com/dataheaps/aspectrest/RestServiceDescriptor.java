@@ -1,6 +1,5 @@
 package com.dataheaps.aspectrest;
 
-import com.dataheaps.aspectrest.validation.Validator;
 import lombok.AllArgsConstructor;
 
 import java.lang.reflect.Method;
@@ -20,9 +19,7 @@ class RestServiceDescriptor implements Comparable<RestServiceDescriptor> {
         Set<RestSource> source = new HashSet<>();
         int index;
         String name;
-        boolean notNull;
         Class<?> argClass;
-        Class<? extends Validator>[] validators;
     }
 
     int priority;
