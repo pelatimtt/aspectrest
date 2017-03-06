@@ -6,7 +6,7 @@
 
     <groupId>com.dataheaps</groupId>
     <artifactId>aspectrest</artifactId>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
 
     <dependencies>
         <dependency>

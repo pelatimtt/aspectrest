@@ -284,6 +284,7 @@ public class AspectRestServlet extends HttpServlet {
             if (!d.verb.equals(verb))
                 continue;
             Matcher m = d.path.matcher(path);
+            logger.debug(String.format("Matching request %s with %s", path, d.path.toString()));
             if (!m.matches())
                 continue;
 
