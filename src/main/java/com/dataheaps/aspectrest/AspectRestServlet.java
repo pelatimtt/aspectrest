@@ -426,7 +426,7 @@ public class AspectRestServlet extends HttpServlet {
                 httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ((UndeclaredThrowableException)e.getTargetException()).getUndeclaredThrowable().getMessage());
             }
             else {
-                httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getTargetException().getMessage());
+                httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getTargetException().getCause().getMessage());
             }
         }
         catch (Exception e) {
