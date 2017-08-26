@@ -6,8 +6,10 @@ import com.dataheaps.aspectrest.modules.auth.AuthModule;
 import com.dataheaps.aspectrest.serializers.GensonSerializer;
 import com.dataheaps.aspectrest.serializers.Serializer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,7 @@ import javax.validation.Validation;
 import javax.validation.ValidationException;
 import javax.validation.ValidatorFactory;
 import javax.validation.executable.ExecutableValidator;
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +32,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -204,7 +206,7 @@ public class AspectRestServlet extends HttpServlet {
         resp.getOutputStream().close();
     }
 
-    Object convert(String source, Class type) throws IllegalArgumentException {
+    Object convertString(String source, Class type) throws IllegalArgumentException {
 
         if (source == null)
             return null;
@@ -258,7 +260,7 @@ public class AspectRestServlet extends HttpServlet {
         else if (type.isEnum())
             return Enum.valueOf(type, source);
         else
-            throw new IllegalArgumentException("Cannot convert \"" + source + "\" to type " + type.toString());
+            throw new IllegalArgumentException("Cannot convertString \"" + source + "\" to type " + type.toString());
     }
 
     Map<String,String> parseQueryString(String qs) {
@@ -292,13 +294,13 @@ public class AspectRestServlet extends HttpServlet {
             for (RestServiceDescriptor.ArgIndex i : d.argsIndexes) {
 
                 if (i.source.contains(RestSource.PATH_ARG) && argVals[i.index] == null) {
-                    argVals[i.index] = convert(m.group(i.name), d.method.getParameterTypes()[i.index]);
+                    argVals[i.index] = convertString(m.group(i.name), d.method.getParameterTypes()[i.index]);
                 }
                 else if (i.source.contains(RestSource.PATH_ALL) && argVals[i.index] == null) {
                     argVals[i.index] = path;
                 }
                 else if (i.source.contains(RestSource.QS_ARG) && argVals[i.index] == null) {
-                    argVals[i.index] = convert(parsedQs.get(i.name), d.method.getParameterTypes()[i.index]);
+                    argVals[i.index] = convertString(parsedQs.get(i.name), d.method.getParameterTypes()[i.index]);
                 }
                 else if (i.source.contains(RestSource.QS_ALL) && argVals[i.index] == null) {
                     argVals[i.index] = qs;
@@ -327,18 +329,20 @@ public class AspectRestServlet extends HttpServlet {
         throw new ValidationException(res.toString());
     }
 
-    void fillBodyParameters(InputStream body, RestRequest request) {
+    void fillBodyParameters(InputStream body, RestRequest request) throws IOException {
 
-        Object o = serializer.deserialize(body, Object.class);
+        byte[] bytes = IOUtils.toByteArray(body);
+        Map inputMap = null;
 
         for (RestServiceDescriptor.ArgIndex i : request.descriptor.argsIndexes) {
 
             if (i.source.contains(RestSource.BODY_ARG) && request.args[i.index] == null) {
-                Object rawValue = ((Map)o).get(i.name);
-                request.args[i.index] = (rawValue instanceof String) ? convert((String)rawValue, i.argClass) : rawValue;
+                if (inputMap == null)
+                    inputMap = (Map) serializer.deserialize(new ByteArrayInputStream(bytes), Map.class);
+                request.args[i.index] = inputMap.get(i.name);
             }
             else if (i.source.contains(RestSource.BODY_ALL) && request.args[i.index] == null) {
-                request.args[i.index] = (o instanceof String) ? convert((String)o, i.argClass) : o;
+                request.args[i.index] = serializer.deserialize(new ByteArrayInputStream(bytes), i.argClass);
             }
         }
 
@@ -426,7 +430,7 @@ public class AspectRestServlet extends HttpServlet {
                 httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ((UndeclaredThrowableException)e.getTargetException()).getUndeclaredThrowable().getMessage());
             }
             else {
-                httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getTargetException().getCause().getMessage());
+                httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getTargetException().getMessage());
             }
         }
         catch (Exception e) {
