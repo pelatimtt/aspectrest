@@ -70,15 +70,23 @@ public class AspectRestServlet extends HttpServlet {
 
     public AspectRestServlet() {
         serializer = new GensonSerializer();
-        factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator().forExecutables();
     }
 
-    public AspectRestServlet(Serializer serializer, Object context) {
+    public AspectRestServlet(boolean validate) {
+        serializer = new GensonSerializer();
+        if (validate) {
+            factory = Validation.buildDefaultValidatorFactory();
+            validator = factory.getValidator().forExecutables();
+        }
+    }
+
+    public AspectRestServlet(boolean validate, Serializer serializer, Object context) {
         this.context = context;
         this.serializer = serializer;
-        factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator().forExecutables();
+        if (validate) {
+            factory = Validation.buildDefaultValidatorFactory();
+            validator = factory.getValidator().forExecutables();
+        }
     }
 
     @Override
@@ -315,6 +323,9 @@ public class AspectRestServlet extends HttpServlet {
     }
 
     void validateParameters(RestServiceDescriptor d, Object[] args) throws IllegalAccessException, InstantiationException {
+
+        if (validator == null)
+            return;
 
         Set<ConstraintViolation<Object>> violations = validator.validateParameters(d.service, d.method, args);
 
