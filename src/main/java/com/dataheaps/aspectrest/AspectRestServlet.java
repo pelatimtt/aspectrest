@@ -1,18 +1,30 @@
 package com.dataheaps.aspectrest;
 
 
-import com.dataheaps.aspectrest.annotations.*;
-import com.dataheaps.aspectrest.modules.auth.AuthModule;
-import com.dataheaps.aspectrest.serializers.GensonSerializer;
-import com.dataheaps.aspectrest.serializers.Serializer;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Getter;
-import lombok.Setter;
-import org.apache.commons.io.IOUtils;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.lang.reflect.UndeclaredThrowableException;
+import java.net.URLDecoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -23,21 +35,34 @@ import javax.validation.Validation;
 import javax.validation.ValidationException;
 import javax.validation.ValidatorFactory;
 import javax.validation.executable.ExecutableValidator;
-import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.UndeclaredThrowableException;
-import java.net.URLDecoder;
-import java.nio.file.Paths;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.dataheaps.aspectrest.annotations.Authenticated;
+import com.dataheaps.aspectrest.annotations.Delete;
+import com.dataheaps.aspectrest.annotations.FromBody;
+import com.dataheaps.aspectrest.annotations.FromPath;
+import com.dataheaps.aspectrest.annotations.FromQueryString;
+import com.dataheaps.aspectrest.annotations.Get;
+import com.dataheaps.aspectrest.annotations.Head;
+import com.dataheaps.aspectrest.annotations.IsBody;
+import com.dataheaps.aspectrest.annotations.IsPath;
+import com.dataheaps.aspectrest.annotations.IsQueryString;
+import com.dataheaps.aspectrest.annotations.Name;
+import com.dataheaps.aspectrest.annotations.Path;
+import com.dataheaps.aspectrest.annotations.Post;
+import com.dataheaps.aspectrest.annotations.Priority;
+import com.dataheaps.aspectrest.annotations.Put;
+import com.dataheaps.aspectrest.modules.auth.AuthModule;
+import com.dataheaps.aspectrest.serializers.GensonSerializer;
+import com.dataheaps.aspectrest.serializers.Serializer;
+
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Created by matteopelati on 26/11/15.
@@ -183,7 +208,9 @@ public class AspectRestServlet extends HttpServlet {
                 ));
             }
 
-            String servicePath = Paths.get("/" + basePath, methodPath.value() + "/").normalize().toString();
+            String servicePath = StringUtils.join("/", basePath, methodPath.value().isEmpty() ? "" : StringUtils.join("/", methodPath.value())).replaceAll("/+", "/");
+            
+//            Paths.get("/" + basePath, methodPath.value() + "/").normalize().toString();
 
             RestServiceDescriptor descriptor = new RestServiceDescriptor(
                     priority != null ? priority.value() : 0,
@@ -411,7 +438,8 @@ public class AspectRestServlet extends HttpServlet {
             Object result = null;
             RestRequest restRequest = getServiceDescriptor(
                     method,
-                    Paths.get(httpServletRequest.getServletPath()).normalize().toString(),
+                   httpServletRequest.getServletPath().replaceAll("/+", "/"),
+//                    Paths.get(httpServletRequest.getServletPath()).normalize().toString(),
                     httpServletRequest.getQueryString(),
                     parseQueryString(httpServletRequest.getQueryString())
             );

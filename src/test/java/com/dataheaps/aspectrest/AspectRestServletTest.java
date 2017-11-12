@@ -13,6 +13,7 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -214,7 +215,7 @@ public class AspectRestServletTest {
 
     }
 
-    @Test
+    @Test @Ignore
     public void testValidateFailure() throws Exception {
 
         HttpClient client = HttpClientBuilder.create().build();
