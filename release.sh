@@ -4,8 +4,8 @@
 read -p "Really deploy to maven central repository  (yes/no)? "
 if ( [ "$REPLY" == "yes" ] ) then
   GPG_TTY=$(tty)
-  xport GPG_TTY
-  mvn release:clean release:prepare release:perform -B -e | tee maven-central-deploy.log
+  export GPG_TTY
+  mvn -DskipTests release:prepare release:perform
 else
   echo 'Exit without deploy'
 fi
