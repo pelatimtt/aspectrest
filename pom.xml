@@ -9,7 +9,6 @@
     <scm>
         <connection>scm:git:ssh://git@github.com/pelatimtt/aspectrest.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/pelatimtt/aspectrest.git</developerConnection>
-        <tag>HEAD</tag>
         <url>https://github.com/pelatimtt/aspectrest</url>
     </scm>
 
