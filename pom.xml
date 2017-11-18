@@ -8,6 +8,30 @@
     <artifactId>aspectrest</artifactId>
     <version>0.1.13</version>
 
+    <scm>
+        <connection>scm:git:ssh://git@github.com/pelatimtt/aspectrest.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/pelatimtt/aspectrest.git</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/pelatimtt/aspectrest</url>
+    </scm>
+
+    <name>AspectRest</name>
+    <description>Annotation-based Servlet for handling REST APIs</description>
+    <url>https://github.com/pelatimtt/aspectrest</url>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>pelatimtt</id>
+            <name>Matteo Pelati</name>
+            <email>matteo.pelati@gmail.com</email>
+        </developer>
+    </developers>
+
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -159,15 +183,51 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>release-sign-artifacts</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.4</version>
+                        <configuration>
+                            <passphrase>${gpg.passphrase}</passphrase>
+                            <keyname>${gpg.keyname}</keyname>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <distributionManagement>
-        <repository>
-            <id>myMavenRepo.write</id>
-            <url>${myMavenRepo.write.url}</url>
-        </repository>
         <snapshotRepository>
-            <id>myMavenRepo.write</id>
-            <url>${myMavenRepo.write.url}</url>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus snapshot repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
+        <repository>
+            <id>sonatype-nexus-staging</id>
+            <name>Sonatype Nexus release repository</name>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
     </distributionManagement>
 
 </project>
