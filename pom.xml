@@ -4,13 +4,13 @@
 
     <groupId>com.dataheaps</groupId>
     <artifactId>aspectrest</artifactId>
-    <version>0.1.13</version>
+    <version>0.1.14-SNAPSHOT</version>
 
     <scm>
         <connection>scm:git:ssh://git@github.com/pelatimtt/aspectrest.git</connection>
-        <url>https://github.com/pelatimtt/aspectrest</url>
         <developerConnection>scm:git:ssh://git@github.com/pelatimtt/aspectrest.git</developerConnection>
         <tag>HEAD</tag>
+        <url>https://github.com/pelatimtt/aspectrest</url>
     </scm>
 
     <name>AspectRest</name>
@@ -111,6 +111,11 @@
             <artifactId>httpclient</artifactId>
             <version>4.5.3</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.5</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish</groupId>
