@@ -86,6 +86,7 @@ public class AspectRestServlet extends HttpServlet {
     @Getter @Setter Map<String, RestHandler> modules = new HashMap<>();
     @Getter @Setter Map<String, AuthModule> authenticators = new HashMap<>();
     @Getter @Setter Map<String, String> headers = new HashMap<>();
+    @Getter @Setter RestErrorHandler errorHandler;
 
     SortedSet<RestServiceDescriptor> serviceTree = new TreeSet<>();
     List<AuthModule> authenticatorTree = new ArrayList<>();
@@ -465,16 +466,15 @@ public class AspectRestServlet extends HttpServlet {
         catch (NoSuchElementException e) {
             httpServletResponse.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, e.getMessage());
         }
-        catch (InvocationTargetException e) {
-            if (e.getTargetException() instanceof UndeclaredThrowableException) {
-                httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ((UndeclaredThrowableException)e.getTargetException()).getUndeclaredThrowable().getMessage());
+        catch (Exception e) {
+
+            if (errorHandler != null) {
+                RestError err = errorHandler.handle(e);
+                httpServletResponse.sendError(err.status, err.message);
             }
             else {
-                httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getTargetException().getMessage());
+                httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
             }
-        }
-        catch (Exception e) {
-            httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
 
     }
