@@ -454,8 +454,12 @@ public class AspectRestServlet extends HttpServlet {
 
             validateParameters(restRequest.descriptor, restRequest.args);
             result = restRequest.descriptor.method.invoke(restRequest.descriptor.service, restRequest.args);
-            sendResponse(result, httpServletResponse);
-
+            if (result instanceof RestError) {
+            	RestError err = (RestError) result;
+            	httpServletResponse.sendError(err.status, err.message);
+            } else {
+            	sendResponse(result, httpServletResponse);
+            }
         }
         catch (FileNotFoundException e) {
             httpServletResponse.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
