@@ -230,15 +230,19 @@ public class AspectRestServlet extends HttpServlet {
 
         }
     }
+    
+    void sendError(int status, String message, HttpServletResponse resp) throws IOException {
+    	sendResponse(new RestResponse(status, message), resp);
+    }
 
-    void sendResponse(Object o, HttpServletResponse resp) throws IOException {
+    void sendResponse(RestResponse restResponse, HttpServletResponse resp) throws IOException {
 
-        byte[] respBuffer = serializer.serialize(o);
+        byte[] respBuffer = serializer.serialize(restResponse.getPayload());
         resp.setHeader(CONTENT_TYPE, serializer.getContentType());
         resp.setHeader(CONTENT_LENGTH, Integer.toString(respBuffer.length));
 
+        resp.setStatus(restResponse.getStatus());
         resp.getOutputStream().write(respBuffer);
-        resp.setStatus(HttpServletResponse.SC_OK);
         resp.getOutputStream().flush();
         resp.getOutputStream().close();
     }
@@ -454,26 +458,38 @@ public class AspectRestServlet extends HttpServlet {
 
             validateParameters(restRequest.descriptor, restRequest.args);
             result = restRequest.descriptor.method.invoke(restRequest.descriptor.service, restRequest.args);
-            sendResponse(result, httpServletResponse);
+            RestResponse restResponse;
+            if (result instanceof RestResponse) {
+            	restResponse = (RestResponse) result;
+            } else {
+            	restResponse = new RestResponse(HttpServletResponse.SC_OK, result);
+            }
+            sendResponse(restResponse, httpServletResponse);
 
         }
         catch (FileNotFoundException e) {
-            httpServletResponse.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+        	sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage(), httpServletResponse);
         }
         catch (IllegalAccessException e) {
-            httpServletResponse.sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage());
+        	sendError(HttpServletResponse.SC_FORBIDDEN, e.getMessage(), httpServletResponse);
         }
         catch (NoSuchElementException e) {
-            httpServletResponse.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, e.getMessage());
+        	sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, e.getMessage(), httpServletResponse);
         }
         catch (Exception e) {
-
             if (errorHandler != null) {
-                RestError err = errorHandler.handle(e);
-                httpServletResponse.sendError(err.status, err.message);
+            	Throwable t;
+            	if (e instanceof InvocationTargetException) {
+            		t = e.getCause();
+            	} else {
+            		t = e;
+            	}
+            	
+                RestResponse errorResponse = errorHandler.handle(t);
+                sendResponse(errorResponse, httpServletResponse);
             }
             else {
-                httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            	sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), httpServletResponse);
             }
         }
 
