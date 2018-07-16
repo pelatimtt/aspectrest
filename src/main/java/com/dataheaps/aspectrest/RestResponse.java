@@ -1,12 +1,13 @@
 package com.dataheaps.aspectrest;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 
 /**
  * Created by admin on 17/3/18.
  */
-@AllArgsConstructor
-public class RestError {
+@AllArgsConstructor @Data
+public class RestResponse {
     int status;
-    String message;
+    Object payload;
 }
